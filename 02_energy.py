@@ -16,7 +16,7 @@ def energy(V, psi, x):
     return integral( - psi2 * psi / 2 + V * psi * psi , x)
 
 x = np.linspace(0, 1, 10**6+1)
-V = (lambda x: 0)(x)
+V = (lambda x: np.zeros_like(x))(x)
 psi = (lambda x: np.sqrt(2)*np.sin(np.pi*x))(x)
 
 print(energy(V, psi, x))
