@@ -16,5 +16,7 @@ def random_fourier(x, nmax=np.random.randint(0, 32)):
     return f(x)
 
 x = np.linspace(0, 1, N+1)
-plt.plot(x, random_fourier(x))
-plt.show()
+
+while True:
+    plt.plot(x, random_fourier(x))
+    plt.show()
