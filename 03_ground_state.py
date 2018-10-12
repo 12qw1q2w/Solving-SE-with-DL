@@ -28,7 +28,7 @@ def energy(V, psi, x):
     return integral(psi*(- psi2*psi/2+V*psi), x)
 
 x = np.linspace(0, 1, N+1)
-V = (lambda x: np.zeros(len(x)))(x)
+V = (lambda x: np.zeros_like(x))(x)
 psi = tf.Variable(np.ones(len(x)))
 Energy = energy(V, psi, x)
 
