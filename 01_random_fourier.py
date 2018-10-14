@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 N = 100
 
 def tensor_sum(f, n0, N):
-    s = f(n0)
-    for n in range(n0+1, N+1):
+    s = 0
+    for n in range(n0, N+1):
         s += f(n)
     return s
 
