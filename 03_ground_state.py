@@ -12,7 +12,11 @@ psis = np.zeros((steps+1, N+1))
 energys = np.zeros(steps+1)
 
 # summation(f, n0, N) = f(n0) + f(n0+1) + ... + f(N)
-summation = lambda f, n0, N: sum([f(n) for n in range(n0, N+1)])
+def summation(f, n0, N):
+    s = 0
+    for i in range(n0, N+1):
+        s += f(i)
+    return s
 
 '''
 derivative(f, x):
