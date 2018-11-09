@@ -1,6 +1,10 @@
 import numpy as np
 
-summation = lambda f, n0, N: np.sum(f(np.arange(n0, N+1)))
+def summation(f, n0, N):
+    s = 0
+    for i in range(n0, N+1):
+        s += f(i)
+    return s
 
 def integral(y, x):
     n = len(x) - 1
