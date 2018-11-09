@@ -24,15 +24,14 @@ derivative(f, x):
     f: An array of the value of the function.
     x: An array of the variables.
 '''
-def derivative(f, x):
+def derivative(y, x):
     n = len(x) - 1
     h = (x[-1] - x[0]) / n
-    f1 = [0 for i in range(n+1)]
-    f1[0] = ( f[1] - f[0] ) / h
-    for i in range(1, n):
-        f1[i] = (f[i+1] - f[i-1]) / (2*h)
-    f1[n] = ( f[-1] - f[-2] ) / h
-    return np.array(f1)
+    y1 = [0 for i in range(n+1)]
+    y1[1:-1] = (y[2:] - y[:-2]) / (2 * h)
+    y1[0] = ( y[1] - y[0] ) / h
+    y1[-1] = ( y[-1] - y[-2] ) / h
+    return np.array(y1)
 
 '''
 integral(y, x):
@@ -54,7 +53,7 @@ energy(V, psi, x):
     x  : The array of the variables(position).
 '''
 def energy(V, psi, x):
-    psi = [psi[i] for i in range(len(x))]
+    psi = np.array([psi[i] for i in range(len(x))])
     psi1 = derivative(psi, x)
     psi2 = derivative(psi1, x)
     return integral(psi*(-psi2/2 + V*psi), x)
