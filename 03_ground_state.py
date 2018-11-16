@@ -1,62 +1,29 @@
-import time
-initial_time = time.time()
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from math import pi
 
-steps = 2000
+N = 256
+steps = 10000
 step = 0
-N = 128 # The number of the samples.
+learning_rate = 2**-9
 
 psis = np.zeros((steps+1, N+1))
 energys = np.zeros(steps+1)
 
-# summation(f, n0, N) = f(n0) + f(n0+1) + ... + f(N)
-def summation(f, n0, N):
-    s = 0
-    for i in range(n0, N+1):
-        s += f(i)
-    return s
+def derivative2(y, x):
+    h = (x[-1] - x[0]) / (int(x.shape[0]) - 1)
+    y2 = (y[2:] + y[:-2] - 2*y[1:-1]) / (h*h)
+    y2 = tf.concat([[2*y2[0] - y2[1]], y2, [2*y2[-1] - y2[-2]]], 0)
+    return y2
 
-'''
-derivative(f, x):
-    It returns the array of the derivatives.
-    f: An array of the value of the function.
-    x: An array of the variables.
-'''
-def derivative(y, x):
-    n = len(x) - 1
-    h = (x[-1] - x[0]) / n
-    y1 = [0 for i in range(n+1)]
-    y1[1:-1] = (y[2:] - y[:-2]) / (2 * h)
-    y1[0] = ( y[1] - y[0] ) / h
-    y1[-1] = ( y[-1] - y[-2] ) / h
-    return np.array(y1)
-
-'''
-integral(y, x):
-    It returns the integral value.
-    y: The array of the value of a function.
-    x: The array of the variables.
-'''
 def integral(y, x):
-    n = len(x) - 1
-    dx = (x[-1] - x[0]) / n
-    return ((y[0] - y[-1]) / 2 + summation(lambda i: y[i], 1, n)) * dx
+    dx = (x[-1] - x[0]) / (int(x.shape[0]) - 1)
+    return ((y[0] + y[-1])/2 + tf.reduce_sum(y[1:-1])) * dx
 
-'''
-energy(V, psi, x):
-    It returns the quantum mechanical energy of the particle.
-    We assume that the mass of the particle and the Dirac's constant are 1.
-    V  : The array of the values of the potential function.
-    psi: The array of the values of the wave function.
-    x  : The array of the variables(position).
-'''
 def energy(V, psi, x):
-    psi = np.array([psi[i] for i in range(len(x))])
-    psi1 = derivative(psi, x)
-    psi2 = derivative(psi1, x)
-    return integral(psi*(-psi2/2 + V*psi), x)
+    psi2 = derivative2(psi, x)
+    return integral(psi*((-0.5)*psi2 + V*psi), x)
 
 def update(step):
     print(step, energys[step])
@@ -86,27 +53,28 @@ def press(event):
             step += 1000
         update(step)
 
-x = np.linspace(0, 1, N+1)                  # The array of the variables.
-V = (lambda x: np.zeros_like(x))(x)         # The array of the potential funcion.
-#psi = tf.Variable(np.random.rand(len(x)))   # The initial wave function: random numbers on [0, 1]
-psi = tf.Variable(np.ones(len(x)))
-Energy = energy(V, psi, x)                  # The energy.
+x = tf.linspace(0.0, 1.0, N+1)
+V = tf.zeros_like(x)
+psi0 = tf.Variable(tf.ones(N-1))
+#psi0 = tf.Variable(tf.random_uniform((N-1,), 0, 1))
+psi = tf.concat([[0.0], psi0, [0.0]], 0)
+E = energy(V, psi, x)
 
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=2**-8)  # The optimizer
-bc0 = tf.assign(psi[0], 0)                                          # The boundary condition psi(0) = 0
-bc1 = tf.assign(psi[-1], 0)                                         # The boundary condition psi(1) = 0
-norm = tf.assign(psi, psi / tf.sqrt(integral(psi*psi, x)))          # Normalization
-train = optimizer.minimize(Energy)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+norm = tf.assign(psi0, psi0 / tf.sqrt(integral(psi*psi, x)))
+train = optimizer.minimize(E)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for step in range(steps+1):
-    sess.run([train, bc0, bc1, norm])
+    sess.run([train, norm])
     psis[step] = sess.run(psi)
-    energys[step] = sess.run(Energy)
-    if step % 10 == 0:
+    energys[step] = sess.run(E)
+    if step % 50 == 0:
         print(step, energys[step])
+
+x = sess.run(x)
 
 fig = plt.figure(figsize=(12.8, 6.4))           # 그림 크기 설정
 fig.canvas.mpl_connect('key_press_event', press)
@@ -124,25 +92,21 @@ plt.xlabel('steps')                             # 두번째 그림 가로축 이
 plt.ylabel('energy')                            # 두번째 그림 세로축 이름
 
 # 이미 알고 있는 파동함수, 검은색 선
-axis00.plot(x, np.sqrt(2)*np.sin(np.pi*x), color='k', linewidth=0.5, label='True wave function')
+axis00.plot(x, np.sqrt(2)*np.sin(pi*x), color='k', linewidth=0.5, label='True wave function')
 
 # 프로그램이 구한 파동함수, 빨간색 점
 line0, = axis00.plot(x, psis[step], color='r', lw=0.5, label='The wave function found by the program')
 
 # 이미 알고 있는 에너지, 검은색 선
-axis01.plot([0, steps], [np.pi**2/2, np.pi**2/2], lw=0.5, color='k', label = 'True energy')
-axis01.text(steps, np.pi**2/2, f'{np.pi**2/2}', ha='center', va='top')
+axis01.plot([0, steps], [pi**2/2, pi**2/2], lw=0.5, color='k', label = 'True energy')
+axis01.text(steps, pi**2/2, f'{pi**2/2}', ha='center', va='top')
 
 # 프로그램이 구한 에너지, 빨간색 점
 axis01.scatter(range(steps+1), energys, s=1, color='r', label = 'The energy found by the program')
-untitled0 = axis01.annotate(f'{energys[-1]}', xytext = (step, energys[-1]+(energys[0]-energys[-1])/10),
-    xy = (step, energys[-1]), color='r', ha = 'center', arrowprops={'facecolor':'w', 'edgecolor':'r'})
+untitled0 = axis01.annotate(f'{energys[-1]}', xytext = (steps, energys[-1]+(energys[0]-energys[-1])/10),
+    xy = (steps, energys[-1]), color='r', ha = 'center', arrowprops={'facecolor':'w', 'edgecolor':'r'})
 
 axis00.legend(loc='lower center')   # 첫번째 그림 범례
 axis01.legend(loc='upper right')    # 두번째 그림 범례
-
-final_time = time.time()
-time_taken = divmod(final_time - initial_time, 60)
-print('Timme taken:', int(time_taken[0]), 'min', int(time_taken[1]), 's')
 
 plt.show()
