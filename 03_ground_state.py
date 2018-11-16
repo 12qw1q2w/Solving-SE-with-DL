@@ -68,7 +68,8 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for step in range(steps+1):
-    sess.run([train, norm])
+    sess.run(train)
+    sess.run(norm)
     psis[step] = sess.run(psi)
     energys[step] = sess.run(E)
     if step % 50 == 0:
